@@ -57,6 +57,7 @@ jobs:
         run: |
           npm ci
           npm run build:site:ci
+          npm run optimize:images
         env:
           WEBFLOW_EXPORT_DIR: ${{ github.workspace }}/site
           NEXT_PUBLIC_APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}

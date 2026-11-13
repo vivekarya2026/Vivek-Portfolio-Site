@@ -6661,3 +6661,9 @@ figcaption {
     grid-area: 1 / 1 / 2 / 4;
   }
 }
+
+/* <picture> wrappers from the image optimizer (AVIF -> WebP -> PNG/JPG).
+   display: contents keeps the inner <img> laid out exactly as before. */
+picture {
+  display: contents;
+}
