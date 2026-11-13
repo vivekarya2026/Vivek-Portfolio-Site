@@ -1,0 +1,80 @@
+# Regenerate CMS-driven pages and commit them. Vercel deploys on push.
+#
+# CMS publish → repository_dispatch (cms-publish) → this workflow
+#   1. checks out this site repo
+#   2. checks out the private CMS repo (read-only deploy key)
+#   3. runs the CMS generator against this checkout
+#   4. commits changed HTML → Vercel production deploy
+#
+# Required repo secrets:
+#   CMS_DEPLOY_KEY   SSH private key; matching public key is a read-only
+#                    deploy key on vivekarya2026/Vivek-Portfolio-CMS
+#   APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY,
+#   APPWRITE_DATABASE_ID, APPWRITE_BUCKET_ID
+name: Rebuild public site
+
+on:
+  repository_dispatch:
+    types: [cms-publish]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why this rebuild was requested
+        required: false
+        default: manual
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-site
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v4
+        with:
+          path: site
+
+      - name: Checkout CMS (private)
+        uses: actions/checkout@v4
+        with:
+          repository: vivekarya2026/Vivek-Portfolio-CMS
+          ssh-key: ${{ secrets.CMS_DEPLOY_KEY }}
+          path: cms
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cms/package-lock.json
+
+      - name: Generate pages from CMS
+        working-directory: cms
+        run: |
+          npm ci
+          npm run build:site:ci
+        env:
+          WEBFLOW_EXPORT_DIR: ${{ github.workspace }}/site
+          NEXT_PUBLIC_APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          NEXT_PUBLIC_APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          APPWRITE_DATABASE_ID: ${{ secrets.APPWRITE_DATABASE_ID }}
+          APPWRITE_BUCKET_ID: ${{ secrets.APPWRITE_BUCKET_ID }}
+
+      - name: Commit generated pages
+        working-directory: site
+        run: |
+          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "No content changes."
+            exit 0
+          fi
+          git config user.name  "portfolio-cms-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "content: CMS publish (${{ github.event.client_payload.reason || inputs.reason || 'manual' }})"
+          git push

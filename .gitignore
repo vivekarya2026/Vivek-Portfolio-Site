@@ -1,0 +1,19 @@
+# Env / secrets (never commit)
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+.obsidian/
+*.log
+
+# Vercel
+.vercel
+
+# Local backups from de-Webflow / site sync
+*.bak
+*.dewf.bak
+projects.bak/
+.dewebflow-backup-*/
