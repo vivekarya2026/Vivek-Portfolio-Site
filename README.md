@@ -2,7 +2,7 @@
 
 Static portfolio for Vivek Arya, product builder who manages, designs and codes.
 
-Live: https://vivek-portfolio-plum.vercel.app
+Live: https://vivekarya.vercel.app
 
 ## Structure
 
